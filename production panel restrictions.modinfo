@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Mod id="e403b233-4510-437c-a7d4-a3d7772637d6" version="1">
+    <Properties>
+        <Name>Production Panel Restrictions</Name>
+        <Description>Blocks districts and Buildings based on custom logic.</Description>
+        <Teaser>Custom Production Panel Restrictions</Teaser>
+        <Authors>satoon101</Authors>
+        <CompatibleVersions>2.0</CompatibleVersions>
+    </Properties>
+
+    <InGameActions>
+
+        <ReplaceUIScript id="ProductionPanel_UI">
+            <Properties>
+                <LuaContext>ProductionPanel</LuaContext>
+                <LuaReplace>scripts/UI/ProductionPanel.lua</LuaReplace>
+            </Properties>
+        </ReplaceUIScript>
+
+        <ImportFiles id="ProductionPanelHelpers">
+            <File>scripts/UI/ProductionPanel_Config.lua</File>
+            <File>scripts/UI/ProductionPanel_Constants.lua</File>
+            <File>scripts/UI/ProductionPanel_Helpers.lua</File>
+            <File>scripts/UI/ProductionPanel_Managers.lua</File>
+        </ImportFiles>
+
+    </InGameActions>
+
+    <Files>
+        <File>scripts/UI/ProductionPanel_Config.lua</File>
+        <File>scripts/UI/ProductionPanel_Constants.lua</File>
+        <File>scripts/UI/ProductionPanel_Helpers.lua</File>
+        <File>scripts/UI/ProductionPanel_Managers.lua</File>
+        <File>scripts/UI/ProductionPanel.lua</File>
+    </Files>
+</Mod>
