@@ -30,6 +30,61 @@ function GetDisabledDistrictWonderRequirements()
     end
 end
 
+TiersByBuildingType = nil
+BuildingTypesByTier = nil
+
+function GetBuildingTierHierarchy()
+    TiersByBuildingType = {}
+    BuildingTypesByTier = {}
+    local prereqData = {}
+    for row in GameInfo.Buildings() do
+        if (
+            not row.InternalOnly
+            and row.TraitType == nil
+            and #row.ReplacesCollection
+        ) then
+            if prereqData[row.PrereqDistrict] == nil then
+                prereqData[row.PrereqDistrict] = {}
+            end
+            prereqData[row.PrereqDistrict][row.BuildingType] = true
+        end
+    end
+
+    for row in GameInfo.BuildingPrereqs() do
+        local districtType = GameInfo.Buildings[row.Building].PrereqDistrict
+        if (
+            prereqData[districtType][row.PrereqBuilding] ~= nil
+            and prereqData[districtType][row.Building] ~= nil
+        ) then
+            prereqData[districtType][row.Building] = row.PrereqBuilding
+        end
+    end
+
+    for districtType, prereqBuildings in pairs(prereqData) do
+        BuildingTypesByTier[districtType] = {}
+        for buildingType in pairs(prereqBuildings) do
+            local tier = 1
+            local currentBuildingType = buildingType
+            while currentBuildingType do
+                currentBuildingType = prereqBuildings[currentBuildingType]
+                if (
+                    currentBuildingType ~= nil and
+                    currentBuildingType ~= true
+                ) then
+                    tier = tier + 1
+                end
+            end
+
+            if BuildingTypesByTier[districtType][tier] == nil then
+                BuildingTypesByTier[districtType][tier] = {}
+            end
+
+            TiersByBuildingType[buildingType] = tier
+            table.insert(BuildingTypesByTier[districtType][tier], buildingType)
+        end
+    end
+end
+
 function CheckDamRestricted(obj)
     local city = CityManager.GetCity(obj.playerID, obj.cityID)
     local districtHash = GameInfo.Districts["DISTRICT_DAM"].Hash
@@ -104,8 +159,8 @@ function CheckDamRestricted(obj)
         local plot = Map.GetPlot(x, y)
         local plotID = plot:GetIndex()
         if riverPlots[plotID] ~= nil then
-            local pinName = pin:GetIconName():gsub("^ICON_", "")
-            local info = GameInfo.Buildings[pinName]
+            local iconName = pin:GetIconName():gsub("^ICON_", "")
+            local info = GameInfo.Buildings[iconName]
             if info ~= nil and info.Index == GREAT_BATH_BUILDING_INDEX then
                 return true, "No suitable location to zone this district"
             end

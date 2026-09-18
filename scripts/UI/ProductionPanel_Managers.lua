@@ -93,10 +93,10 @@ function CityProductionManager:GetWonderForCity()
         local plot = Map.GetPlot(iX, iY)
         local plotID = plot:GetIndex()
         if self.cityPlotIDMap[plotID] ~= nil then
-            local pinName = pin:GetIconName():gsub("^ICON_", "")
-            local buildingInfo = GameInfo.Buildings[pinName]
+            local iconName = pin:GetIconName():gsub("^ICON_", "")
+            local buildingInfo = GameInfo.Buildings[iconName]
             if buildingInfo ~= nil and buildingInfo.IsWonder then
-                self.wonderName = pinName
+                self.wonderName = iconName
                 return
             end
         end
@@ -219,25 +219,88 @@ function CityProductionManager:IsBuildingBlocked(
         if buildingType ~= self.wonderName then
             return true, "This wonder is for a different city."
         end
-    else
-        local districtConfig = DistrictConfig[districtType]
-        local buildingConfigs = districtConfig["Buildings"] or {}
-        local buildingConfig = buildingConfigs
-        -- local x = {};
-        -- for row in GameInfo.BuildingReplaces() do
-        --     local y = row.CivUniqueBuildingType;
-        --     local z = row.ReplacesBuildingType;
-        --     if x[y] == nil then
-        --         x[y] = {};
-        --     end;
-        --     table.insert(x[y], z);
-        -- end;
-        -- for k, v in pairs(x) do
-        --     print(k);
-        --     for i = 1, #v do
-        --         print("", v[i]);
-        --     end;
-        -- end;
+    end
+
+    local baseDistrictType = districtType
+    local replaceInfo = GameInfo.DistrictReplaces[districtType]
+    if replaceInfo ~= nil then
+        baseDistrictType = replaceInfo.ReplacesDistrictType
+    end
+    print(districtType, baseDistrictType)
+    local districtConfig = DistrictConfig[baseDistrictType]
+    local buildingConfigs = districtConfig["Buildings"] or {}
+    local baseBuildingType = buildingType
+    local info = GameInfo.Buildings[buildingType]
+    if #info.ReplacesCollection == 1 then
+        buildingType = #info.ReplacesCollection[1].ReplacesBuildingType
+    elseif #info.ReplacesCollection > 1 then
+        for i = 1, #info.ReplacesCollection do
+            local row = info.ReplacesCollection[i]
+            local buildingConfig = buildingConfigs[row.ReplacesBuildingType] or {}
+            local isDisabled = buildingConfig["Disabled"] or false
+            if not isDisabled or i == #info.ReplacesCollection then
+                baseBuildingType = row.ReplacesBuildingType
+                break
+            end
+        end
+    end
+
+    print(buildingType, baseBuildingType)
+    if TiersByBuildingType == nil then
+        GetBuildingTierHierarchy()
+    end
+
+    print(baseBuildingType)
+    local buildingConfig = buildingConfigs[baseBuildingType] or {}
+    if buildingConfig["Disabled"] then
+        local canProceed = false
+        if self.prereqBuildings[baseBuildingType] ~= nil then
+            canProceed = true
+            local tier = TiersByBuildingType[baseBuildingType]
+            if tier ~= nil then
+                local tierData = BuildingTypesByTier[baseDistrictType] or {}
+                tierData = tierData[tier] or {}
+                if #tierData > 0 then
+                    for i = 1, #tierData do
+                        local checkBuildingType = tierData[i]
+                        local checkConfig = buildingConfigs[checkBuildingType] or {}
+                        if (
+                            checkConfig["Disabled"] == nil or
+                            checkConfig["Disabled"] == false
+                        ) then
+                            canProceed = true
+                        end
+                    end
+                end
+            end
+        end
+
+        if not canProceed then
+            return true, "Always disabled."
+        end
+    end
+
+    if buildingConfig["Function"] ~= nil then
+        local argument = buildingConfig["Argument"]
+        return buildingConfig["Function"](self, argument)
+    end
+
+    local currentEraIndex = Game.GetEras():GetCurrentEra()
+    local districtTierData = TiersByBuildingType[baseBuildingType] or {}
+    local tier = districtTierData[baseBuildingType]
+    local tierConfig = districtConfig["Tiers"] or {}
+    if tierConfig[tier] ~= nil then
+        local buildingTierConfig = tierConfig[tier]
+        if (
+            buildingTierConfig["Era"] ~= nil and
+            currentEraIndex < buildingTierConfig["Era"]
+        ) then
+            if self.prereqBuildings[baseBuildingType] == nil then
+                local eraInfo = GameInfo.Eras[districtConfig["Era"]]
+                local eraName = Locale.Lookup(eraInfo.Name)
+                return true, "Disabled until the " .. eraName .. "."
+            end
+        end
     end
     return false, ""
 end
@@ -256,3 +319,5 @@ function CityProductionManager:GetCurrentBuildingProgress()
 
     return queue:GetBuildingProgress(item.BuildingType)
 end
+
+print("=== Production Panel Restrictions (Managers) Loaded ===")
