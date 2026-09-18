@@ -118,24 +118,48 @@ function GetDistrictCount(playerID, districtType)
     return count
 end
 
-function GetBuildingCount(playerID, buildingType)
+function GetBuildingCount(playerID, districtType, index, isTier)
+    local buildingTypes = {index}
+    if isTier then
+        local tiers = BuildingTypesByTier[districtType] or {}
+        buildingTypes = tiers[index] or {}
+    end
+
     local count = 0
-    local index = GameInfo.Buildings[buildingType].Index
+    if #buildingTypes == 0 then
+        return count
+    end
+
     local player = Players[playerID]
     local cities = player:GetCities()
     for _, city in cities:Members() do
         local buildings = city:GetBuildings()
         local queue = city:GetBuildQueue()
-        if buildings:HasBuilding(index) or queue:HasBeenPlaced(index) then
-            count = count + 1
-        else
+        for i = 1, #buildingTypes do
+            local found = false
+            local buildingType = buildingTypes[i]
+            local buildingIndex = GameInfo.Buildings[buildingType].Index
+            if (
+                buildings:HasBuilding(buildingIndex)
+                or queue:HasBeenPlaced(buildingIndex)
+            ) then
+                found = true
+                count = count + 1
+                break
+            end
+
             local length = queue:GetSize()
-            for i = 0, length - 1 do
-                local item = queue:GetAt(i)
-                if item.BuildingType == index then
+            for n = 0, length - 1 do
+                local item = queue:GetAt(n)
+                if item.BuildingType == buildingIndex then
+                    found = true
                     count = count + 1
                     break
                 end
+            end
+
+            if found then
+                break
             end
         end
     end
@@ -234,11 +258,14 @@ end
 function RestrictForStableGovernor(obj, stableGovernorState)
     local city = CityManager.GetCity(obj.playerID, obj.cityID)
     local governor = city:GetAssignedGovernor()
-    if governor == nil then
-        return false, ""
+    local hasStableGovernor = false
+    if (
+        governor ~= nil and
+        StableGovernors[governor:GetType()] == true
+    ) then
+        hasStableGovernor = true
     end
 
-    local hasStableGovernor = StableGovernors[governor:GetType()] or false
     if stableGovernorState and not hasStableGovernor then
         return true, "Only allowed for cities with a stable governor."
     end
