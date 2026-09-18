@@ -61,6 +61,11 @@ CityDistrictPurposesByType = {
 
 MIN_MOUNTAIN_COUNT_FOR_MONASTERY = 3
 
+TIER_ONE = 1
+TIER_TWO = 2
+TIER_THREE = 3
+TIER_FOUR = 4
+
 DistrictPurposesArray = {}
 for key, value in pairs(CityDistrictPurposesByType) do
     if DistrictPurposesArray[value] == nil then

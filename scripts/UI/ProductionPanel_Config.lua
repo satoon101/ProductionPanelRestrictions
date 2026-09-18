@@ -10,12 +10,22 @@ include("ProductionPanel_Helpers")
 --      Disabled = never allowed to build (exception when required for Wonder)
 --      Era = District can't be built until given era
 --      Function = Special Function run for District restrictions
+--      Quota = A table used to limit the count by era (see below)
+--          When using Quota, you should also specify an Era
 --
 -- Building Level Configs:
+--      Keys can be building names or tier names
+--      CapitalOnly = never allowed to build except in the capital
 --      Disabled = never allowed to build
---      Function = Special Function run for specific Building restritions
---      Era = Building(s) can't be built until given era
---          If integers are used as keys, they represent the Tier of building
+--      Era = Building/tier disabled until the given Era
+--      Function = Special Function run for specific building/tier
+--      Argument = Extra argument value passed to the Special Function
+--      Quota = An object used to limit the count per building/tier by era (see below)
+--          When using Quota, you should also specify an Era
+--
+-- Quota Level Configs:
+--      Keys are always indexes representing an Era
+--      Values are the total number allowed per Era for the building/tier
 
 DistrictConfig = {
     DISTRICT_AERODROME = {
@@ -24,6 +34,18 @@ DistrictConfig = {
     DISTRICT_AQUEDUCT = {
         Disabled = true,
         Buildings = {
+            [TIER_ONE] = {
+                Era = INFORMATION_ERA_INDEX,
+            },
+
+            [TIER_TWO] = {
+                Era = INFORMATION_ERA_INDEX,
+            },
+
+            [TIER_THREE] = {
+                Era = INFORMATION_ERA_INDEX,
+            },
+
             -- Tier 2
             BUILDING_JNR_BATHHOUSE = {
                 Disabled = true,
@@ -32,21 +54,26 @@ DistrictConfig = {
                 Disabled = true,
             },
         },
-        Tiers = {
-            [1] = {
-                Era = INFORMATION_ERA_INDEX,
-            },
-            [2] = {
-                Era = INFORMATION_ERA_INDEX,
-            },
-            [3] = {
-                Era = INFORMATION_ERA_INDEX,
-            },
-        },
     },
     DISTRICT_CAMPUS = {
         Disabled = true,
         Buildings = {
+            [TIER_ONE] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
+            [TIER_TWO] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
+            [TIER_THREE] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
+            [TIER_FOUR] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
             -- Tier 1
             BUILDING_JNR_ACADEMY = {
                 Disabled = true,
@@ -64,43 +91,58 @@ DistrictConfig = {
                 Disabled = true,
             },
         },
-        Tiers = {
-            [1] = {
-                Era = CLASSICAL_ERA_INDEX,
-            },
-            [2] = {
-                Era = RENAISSANCE_ERA_INDEX,
-            },
-            [3] = {
-                Era = ATOMIC_ERA_INDEX,
-            },
-            [4] = {
-                Era = ATOMIC_ERA_INDEX,
-            },
-        },
     },
     DISTRICT_CANAL = {
         Disabled = true,
     },
     DISTRICT_CITY_CENTER = {
         Buildings = {
+            [TIER_THREE] = {
+                Era = INDUSTRIAL_ERA_INDEX,
+            },
+
             -- Tier 1
             BUILDING_MONUMENT = {
-                Disabled = true,
+                CapitalOnly = true,
             },
             -- Tier 3
             BUILDING_JNR_WHARF_TRADE = {
                 Disabled = true,
             },
         },
-        Tiers = {
-            [3] = {
-                Era = INDUSTRIAL_ERA_INDEX,
-            },
-        },
     },
     DISTRICT_COMMERCIAL_HUB = {
+        Quota = {
+            [CLASSICAL_ERA_INDEX] = 6,
+            [MEDIEVAL_ERA_INDEX] = 10,
+            [RENAISSANCE_ERA_INDEX] = 16,
+            [INDUSTRIAL_ERA_INDEX] = 20,
+            [MODERN_ERA_INDEX] = 30,
+        },
         Buildings = {
+            [TIER_ONE] = {
+                Era = CLASSICAL_ERA_INDEX,
+                Quota = {
+                    [CLASSICAL_ERA_INDEX] = 4,
+                    [MEDIEVAL_ERA_INDEX] = 8,
+                    [RENAISSANCE_ERA_INDEX] = 12,
+                    [INDUSTRIAL_ERA_INDEX] = 16,
+                    [MODERN_ERA_INDEX] = 24,
+                },
+            },
+
+            [TIER_TWO] = {
+                Era = INDUSTRIAL_ERA_INDEX,
+                Quota = {
+                    [INDUSTRIAL_ERA_INDEX] = 12,
+                    [MODERN_ERA_INDEX] = 18,
+                },
+            },
+
+            [TIER_THREE] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
             -- Tier 1
             BUILDING_JNR_WAYSTATION = {
                 Disabled = true,
@@ -128,22 +170,11 @@ DistrictConfig = {
                 Disabled = true,
             },
         },
-        Tiers = {
-            [1] = {
-                Era = CLASSICAL_ERA_INDEX,
-            },
-            [2] = {
-                Era = INDUSTRIAL_ERA_INDEX,
-            },
-            [3] = {
-                Era = ATOMIC_ERA_INDEX,
-            },
-        },
     },
     DISTRICT_DAM = {
         Function = CheckDamRestricted,
-        Tiers = {
-            [1] = {
+        Buildings = {
+            [TIER_ONE] = {
                 Era = ATOMIC_ERA_INDEX,
             },
         },
@@ -162,7 +193,29 @@ DistrictConfig = {
         },
     },
     DISTRICT_ENCAMPMENT = {
+        Era = MODERN_ERA_INDEX,
+        Quota = {
+            [MODERN_ERA_INDEX] = 20,
+        },
         Buildings = {
+            [TIER_ONE] = {
+                Era = MODERN_ERA_INDEX,
+                Quota = {
+                    [MODERN_ERA_INDEX] = 15,
+                },
+            },
+
+            [TIER_TWO] = {
+                Era = RENAISSANCE_ERA_INDEX,
+                Quota = {
+                    [MODERN_ERA_INDEX] = 12,
+                },
+            },
+
+            [TIER_THREE] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
             -- Tier 1
             BUILDING_JNR_TARGET_RANGE = {
                 Disabled = true,
@@ -182,20 +235,24 @@ DistrictConfig = {
                 Disabled = true,
             },
         },
-        Tiers = {
-            [1] = {
-                Era = CLASSICAL_ERA_INDEX,
-            },
-            [2] = {
-                Era = RENAISSANCE_ERA_INDEX,
-            },
-            [3] = {
-                Era = ATOMIC_ERA_INDEX,
-            },
-        },
     },
     DISTRICT_ENTERTAINMENT_COMPLEX = {
         Buildings = {
+            [TIER_ONE] = {
+                Era = CLASSICAL_ERA_INDEX,
+            },
+
+            [TIER_TWO] = {
+                Era = MODERN_ERA_INDEX,
+                Quota = {
+                    [MODERN_ERA_INDEX] = 16,
+                },
+            },
+
+            [TIER_THREE] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
             -- Tier 1
             BUILDING_ARENA = {
                 Disabled = true,
@@ -207,17 +264,6 @@ DistrictConfig = {
             -- Tier 3
             BUILDING_JNR_CONVENTION = {
                 Disabled = true,
-            },
-        },
-        Tiers = {
-            [1] = {
-                Era = CLASSICAL_ERA_INDEX,
-            },
-            [2] = {
-                Era = MODERN_ERA_INDEX,
-            },
-            [3] = {
-                Era = ATOMIC_ERA_INDEX,
             },
         },
     },
@@ -255,7 +301,20 @@ DistrictConfig = {
         },
     },
     DISTRICT_HARBOR = {
+        Era = MEDIEVAL_ERA_INDEX,
         Buildings = {
+            [TIER_ONE] = {
+                Era = CLASSICAL_ERA_INDEX,
+            },
+
+            [TIER_TWO] = {
+                Era = RENAISSANCE_ERA_INDEX,
+            },
+
+            [TIER_THREE] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
             -- Tier 1
             BUILDING_JNR_LIGHTHOUSE_FISHING = {
                 Disabled = true,
@@ -263,6 +322,13 @@ DistrictConfig = {
             -- Tier 2
             BUILDING_JNR_ENTREPOT = {
                 Disabled = true,
+            },
+            -- TODO: implement these functions
+            BUILDING_SHIPYARD = {
+                Function = nil,
+            },
+            BUILDING_JNR_FISH_MARKET = {
+                Function = nil,
             },
             -- Tier 3
             BUILDING_JNR_OFFSHORE_TERMINAL = {
@@ -272,20 +338,13 @@ DistrictConfig = {
                 Disabled = true,
             },
         },
-        Tiers = {
-            [1] = {
-                Era = CLASSICAL_ERA_INDEX,
-            },
-            [2] = {
-                Era = RENAISSANCE_ERA_INDEX,
-            },
-            [3] = {
-                Era = ATOMIC_ERA_INDEX,
-            },
-        },
     },
     DISTRICT_HOLY_SITE = {
         Buildings = {
+            [TIER_FOUR] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
             -- Tier 1
             BUILDING_JNR_ALTAR = {
                 Function = RestrictForStableGovernor,
@@ -309,14 +368,34 @@ DistrictConfig = {
                 Disabled = true,
             },
         },
-        Tiers = {
-            [4] = {
-                Era = ATOMIC_ERA_INDEX,
-            },
-        },
     },
     DISTRICT_INDUSTRIAL_ZONE = {
+        Era = INDUSTRIAL_ERA_INDEX,
+        Quota = {
+            [INDUSTRIAL_ERA_INDEX] = 20,
+            [MODERN_ERA_INDEX] = 30,
+        },
         Buildings = {
+            [TIER_ONE] = {
+                Era = INDUSTRIAL_ERA_INDEX,
+                Quota = {
+                    [INDUSTRIAL_ERA_INDEX] = 10,
+                    [MODERN_ERA_INDEX] = 16,
+                },
+            },
+
+            [TIER_TWO] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
+            [TIER_THREE] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
+            [TIER_FOUR] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
             -- Tier 1
             BUILDING_JNR_WIND_MILL = {
                 Function = CanCityBuildBuilding,
@@ -341,25 +420,19 @@ DistrictConfig = {
                 Disabled = true,
             },
         },
-        Tiers = {
-            [1] = {
-                Era = INDUSTRIAL_ERA_INDEX,
-            },
-            [2] = {
-                Era = ATOMIC_ERA_INDEX,
-            },
-            [3] = {
-                Era = ATOMIC_ERA_INDEX,
-            },
-            [4] = {
-                Era = ATOMIC_ERA_INDEX,
-            },
-        },
     },
     DISTRICT_NEIGHBORHOOD = {
         Disabled = true,
         Era = ATOMIC_ERA_INDEX,
         Buildings = {
+            [TIER_ONE] = {
+                Era = INDUSTRIAL_ERA_INDEX,
+            },
+
+            [TIER_TWO] = {
+                Era = INDUSTRIAL_ERA_INDEX,
+            },
+
             -- Tier 2
             BUILDING_JNR_ART_GALLERY = {
                 Disabled = true,
@@ -368,21 +441,16 @@ DistrictConfig = {
                 Disabled = true,
             },
         },
-        Tiers = {
-            [1] = {
-                Era = INFORMATION_ERA_INDEX,
-            },
-            [2] = {
-                Era = INFORMATION_ERA_INDEX,
-            },
-        },
     },
     DISTRICT_PRESERVE = {
         Era = ATOMIC_ERA_INDEX,
-        Buildings = {
+        Quota = {
+            [ATOMIC_ERA_INDEX] = 1,
+            [INFORMATION_ERA_INDEX] = 2,
+            [FUTURE_ERA_INDEX] = 3,
         },
-        Tiers = {
-            [1] = {
+        Buildings = {
+            [TIER_ONE] = {
                 Era = INFORMATION_ERA_INDEX,
             },
         },
@@ -394,6 +462,22 @@ DistrictConfig = {
     DISTRICT_THEATER = {
         Era = ATOMIC_ERA_INDEX,
         Buildings = {
+            [TIER_ONE] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
+            [TIER_TWO] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
+            [TIER_THREE] = {
+                Era = INFORMATION_ERA_INDEX,
+            },
+
+            [TIER_FOUR] = {
+                Era = INFORMATION_ERA_INDEX,
+            },
+
             -- Tier 1
             BUILDING_JNR_ASSEMBLY = {
                 Disabled = true,
@@ -407,35 +491,37 @@ DistrictConfig = {
                 Disabled = true,
             },
             BUILDING_MUSEUM_ART = {
-                -- TODO: add function
-                Function = nil,
+                Function = RestrictMuseumsForArtifacts,
+                Argument = false,
             },
             BUILDING_MUSEUM_ARTIFACT = {
-                -- TODO: add function
-                Function = nil,
+                Function = RestrictMuseumsForArtifacts,
+                Argument = true,
             },
             -- Tier 4
             BUILDING_BROADCAST_CENTER = {
                 Disabled = true,
             },
         },
-        Tiers = {
-            [1] = {
-                Era = ATOMIC_ERA_INDEX,
-            },
-            [2] = {
-                Era = ATOMIC_ERA_INDEX,
-            },
-            [3] = {
-                Era = INFORMATION_ERA_INDEX,
-            },
-            [4] = {
-                Era = INFORMATION_ERA_INDEX,
-            },
-        },
     },
     DISTRICT_WATER_ENTERTAINMENT_COMPLEX = {
         Buildings = {
+            [TIER_ONE] = {
+                Era = INDUSTRIAL_ERA_INDEX,
+                Quota = {
+                    [INDUSTRIAL_ERA_INDEX] = 16,
+                    [MODERN_ERA_INDEX] = 24,
+                },
+            },
+
+            [TIER_TWO] = {
+                Era = MODERN_ERA_INDEX,
+            },
+
+            [TIER_THREE] = {
+                Era = ATOMIC_ERA_INDEX,
+            },
+
             -- Tier 1
             BUILDING_JNR_MARINA = {
                 Disabled = true,
@@ -447,17 +533,6 @@ DistrictConfig = {
             -- Tier 3
             BUILDING_JNR_CRUISE_TERMINAL = {
                 Disabled = true,
-            },
-        },
-        Tiers = {
-            [1] = {
-                Era = INDUSTRIAL_ERA_INDEX,
-            },
-            [2] = {
-                Era = MODERN_ERA_INDEX,
-            },
-            [3] = {
-                Era = ATOMIC_ERA_INDEX,
             },
         },
     },
