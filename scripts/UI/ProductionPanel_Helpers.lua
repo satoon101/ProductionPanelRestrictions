@@ -5,6 +5,9 @@
 
 include("ProductionPanel_Constants")
 
+-------------------------------------------------------------------------------
+-- Data mapping based functions
+-------------------------------------------------------------------------------
 DistrictWonderMapping = nil
 
 function GetDisabledDistrictWonderRequirements()
@@ -42,6 +45,7 @@ function GetBuildingTierHierarchy()
             not row.InternalOnly
             and row.TraitType == nil
             and #row.ReplacesCollection
+            and not row.IsWonder
         ) then
             if prereqData[row.PrereqDistrict] == nil then
                 prereqData[row.PrereqDistrict] = {}
@@ -52,11 +56,13 @@ function GetBuildingTierHierarchy()
 
     for row in GameInfo.BuildingPrereqs() do
         local districtType = GameInfo.Buildings[row.Building].PrereqDistrict
-        if (
-            prereqData[districtType][row.PrereqBuilding] ~= nil
-            and prereqData[districtType][row.Building] ~= nil
-        ) then
-            prereqData[districtType][row.Building] = row.PrereqBuilding
+        if districtType ~= nil then
+            if (
+                prereqData[districtType][row.PrereqBuilding] ~= nil
+                and prereqData[districtType][row.Building] ~= nil
+            ) then
+                prereqData[districtType][row.Building] = row.PrereqBuilding
+            end
         end
     end
 
@@ -85,6 +91,60 @@ function GetBuildingTierHierarchy()
     end
 end
 
+-------------------------------------------------------------------------------
+-- Current counts based helper functions
+-------------------------------------------------------------------------------
+function GetDistrictCount(playerID, districtType)
+    local count = 0
+    local index = GameInfo.Districts[districtType].Index
+    local player = Players[playerID]
+    local cities = player:GetCities()
+    for _, city in cities:Members() do
+        local districts = city:GetDistricts()
+        if districts:HasDistrict(index) then
+            count = count + 1
+        else
+            local queue = city:GetBuildQueue()
+            local length = queue:GetSize()
+            for i = 0, length - 1 do
+                local item = queue:GetAt(i)
+                if item.DistrictType == index then
+                    count = count + 1
+                    break
+                end
+            end
+        end
+    end
+    return count
+end
+
+function GetBuildingCount(playerID, buildingType)
+    local count = 0
+    local index = GameInfo.Buildings[buildingType].Index
+    local player = Players[playerID]
+    local cities = player:GetCities()
+    for _, city in cities:Members() do
+        local buildings = city:GetBuildings()
+        local queue = city:GetBuildQueue()
+        if buildings:HasBuilding(index) or queue:HasBeenPlaced(index) then
+            count = count + 1
+        else
+            local length = queue:GetSize()
+            for i = 0, length - 1 do
+                local item = queue:GetAt(i)
+                if item.BuildingType == index then
+                    count = count + 1
+                    break
+                end
+            end
+        end
+    end
+    return count
+end
+
+-------------------------------------------------------------------------------
+-- District based Function restrictions
+-------------------------------------------------------------------------------
 function CheckDamRestricted(obj)
     local city = CityManager.GetCity(obj.playerID, obj.cityID)
     local districtHash = GameInfo.Districts["DISTRICT_DAM"].Hash
@@ -168,6 +228,9 @@ function CheckDamRestricted(obj)
     end
 end
 
+-------------------------------------------------------------------------------
+-- Building based Function restrictions
+-------------------------------------------------------------------------------
 function RestrictForStableGovernor(obj, stableGovernorState)
     local city = CityManager.GetCity(obj.playerID, obj.cityID)
     local governor = city:GetAssignedGovernor()
@@ -202,13 +265,55 @@ function CanCityBuildBuilding(obj, buildingType)
     return queue:CanProduce(buildingType)
 end
 
-function GetExistingMuseumsOfAntiquity()
-    -- loop through all cities to find 
+-----------------------------------------
+-- Museum of Art/Archaeology Functions
+-----------------------------------------
+function RestrictMuseumsForArtifacts(obj, isForArtifacts)
+    local artifactCount = GetArtifactCount(obj.playerID)
+    local allowedCount = math.ceil(artifactCount / 3)
+    local currentCount = GetBuildingCount(
+        obj.playerID, MUSEUM_OF_ARCHAEOLOGY_INDEX
+    )
+    if currentCount < allowedCount and not isForArtifacts then
+        return true, "Quota for Museum of Archaeology not met, yet."
+    elseif currentCount >= allowedCount and isForArtifacts then
+        return true, "Quota for Museum of Archaeology already met."
+    end
+
+    return false, ""
 end
 
-function GetArtifactCount()
-    -- loop through Museums of Antiquity and count the number of artifacts
-    -- loop through all plots and count the number of artifacts
+function GetArtifactCount(playerID)
+    local count = 0
+    local iW, iH = Map.GetGridSize()
+    for x = 0, iW - 1 do
+        for y = 0, iH -1 do
+            local plot = Map.GetPlot(x, y)
+            local resourceType = plot:GetResourceType()
+            if (
+                resourceType == ANTIQUITY_SITE_INDEX
+                or resourceType == SHIPWRECK_INDEX
+            ) then
+                count = count + 1
+            end
+        end
+    end
+
+    local player = Players[playerID]
+    local cities = player:GetCities()
+    for _, city in cities:Members() do
+        local buildings = city:GetBuildings()
+        if buildings:HasBuilding(MUSEUM_OF_ARCHAEOLOGY_INDEX) then
+            local length = buildings:GetNumGreatWorkSlots(MUSEUM_OF_ARCHAEOLOGY_INDEX)
+            for i = 0, length - 1 do
+                local index = buildings:GetGreatWorkInSlot(MUSEUM_OF_ARCHAEOLOGY_INDEX, i)
+                if index ~= -1 then
+                    count = count + 1
+                end
+            end
+        end
+    end
+    return count
 end
 
 print("=== Production Panel Restrictions (Helpers) Loaded ===")
