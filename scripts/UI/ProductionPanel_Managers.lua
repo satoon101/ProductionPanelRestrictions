@@ -298,14 +298,28 @@ function CityProductionManager:IsBuildingBlocked(
     local runFunction = buildingConfig["Function"] or tierConfig["Function"]
     local argument = buildingConfig["Argument"] or tierConfig["Argument"]
     if runFunction ~= nil then
-        return runFunction(self, argument)
+        local isBlocked, reason = runFunction(self, argument)
+        if isBlocked then
+            return isBlocked, reason
+        end
     end
 
     local currentEraIndex = Game.GetEras():GetCurrentEra()
-    local quotaData = buildingConfig["Quota"] or tierConfig["Quota"] or {}
+    local quotaData = {}
+    local isTier = false
+    local index = GameInfo.Buildings[buildingType].Index
+    if buildingConfig["Quota"] ~= nil then
+        quotaData = buildingConfig["Quota"]
+    elseif tierConfig["Quota"] ~= nil then
+        quotaData = tierConfig["Quota"]
+        index = tier
+        isTier = true
+    end
     local quota = quotaData[currentEraIndex]
     if quota ~= nil then
-        local currentCount = GetBuildingCount(self.playerID, buildingType)
+        local currentCount = GetBuildingCount(
+            self.playerID, baseDistrictType, index, isTier
+        )
         if currentCount >= quota then
             return true, "Quota for this era has already been met."
         end
