@@ -3,7 +3,7 @@
 --  Overrides ProductionPanel to block certain districts.
 -- ===========================================================================
 
-print("=== Production Panel Restrictions (ProductionPanel) Loading ===")
+print("=== Production Panel Restrictions (UI) Loading ===")
 
 include("ProductionPanel")
 include("ProductionPanel_Managers")
@@ -32,7 +32,6 @@ function GetData()
     --------------------------------------------------------------------------
     -- Block production of Districts
     --------------------------------------------------------------------------
-    print(1)
     if #data.DistrictItems > 0 then
         for i = 1, #data.DistrictItems do
             local item = data.DistrictItems[i]
@@ -41,7 +40,6 @@ function GetData()
                 not item.HasBeenBuilt and
                 item.Progress == 0
             ) then
-                print(item.Type)
                 local isBlocked, reason = obj:IsDistrictBlocked(item.Type)
                 if isBlocked then
                     item.Disabled = true
@@ -54,7 +52,6 @@ function GetData()
     --------------------------------------------------------------------------
     -- Block production of Buildings
     --------------------------------------------------------------------------
-    print(2)
     local progressData = {}
     local disabledItems = {}
     if #data.BuildingItems > 0 then
@@ -79,7 +76,6 @@ function GetData()
     --------------------------------------------------------------------------
     -- the item currently at the front of the queue will not be included,
     --  so we need to retrieve that value separately
-    print(3)
     local currentProgressAmount = obj:GetCurrentBuildingProgress()
     if currentProgressAmount ~= nil then
         progressData[data.CurrentProductionType] = currentProgressAmount
@@ -103,4 +99,4 @@ function GetData()
     return data
 end
 
-print("=== Production Panel Restrictions (ProductionPanel) Loaded ===")
+print("=== Production Panel Restrictions (UI) Loaded ===")
