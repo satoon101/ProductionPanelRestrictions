@@ -169,31 +169,28 @@ function CityProductionManager:IsDistrictBlocked(districtType)
     if replaceInfo ~= nil then
         baseDistrictType = replaceInfo.ReplacesDistrictType
     end
-    local districtConfig = DistrictConfig[baseDistrictType]
-    if districtConfig ~= nil then
-        local currentEraIndex = Game.GetEras():GetCurrentEra()
-        if baseDistrictType ~= self.prereqDistrict then
-            if districtConfig["Disabled"] then
-                local string = DistrictWonderMapping[self.wonderName]
-                if string == nil then
-                    string = "Always disabled"
-                end
-                return true, string
-            end
+    if baseDistrictType == self.prereqDistrict then
+        return false, ""
+    end
 
-            if (
-                districtConfig["Era"] ~= nil and
-                currentEraIndex < districtConfig["Era"]
-            ) then
-                local eraInfo = GameInfo.Eras[districtConfig["Era"]]
-                local eraName = Locale.Lookup(eraInfo.Name)
-                return true, "Disabled until the " .. eraName .. "."
-            end
+    local districtConfig = DistrictConfig[baseDistrictType] or {}
+    local currentEraIndex = Game.GetEras():GetCurrentEra()
+    if districtConfig["Disabled"] then
+        local string = DistrictWonderMapping[self.wonderName]
+        if string == nil then
+            string = "Always disabled"
         end
+        return true, string
+    end
 
-        if districtConfig["Function"] ~= nil then
-            return districtConfig["Function"](self)
-        end
+    local era = districtConfig["Era"]
+    if era ~= nil and currentEraIndex < era then
+        local eraName = Locale.Lookup(GameInfo.Eras[era].Name)
+        return true, "Disabled until the " .. eraName .. "."
+    end
+
+    if districtConfig["Function"] ~= nil then
+        return districtConfig["Function"](self)
     end
 
     if CityDistrictPurposesByType[baseDistrictType] then
@@ -209,16 +206,24 @@ function CityProductionManager:IsDistrictBlocked(districtType)
             end
         end
     end
+
+    local quotaData = districtConfig["Quota"] or {}
+    local quota = quotaData[currentEraIndex]
+    if quota ~= nil then
+        local currentCount = GetDistrictCount(self.playerID, districtType)
+        if currentCount >= quota then
+            return true, "Quota for this era has already been met."
+        end
+    end
+
     return false, ""
 end
 
 function CityProductionManager:IsBuildingBlocked(
     districtType, buildingType, isWonder
 )
-    if isWonder then
-        if buildingType ~= self.wonderName then
-            return true, "This wonder is for a different city."
-        end
+    if isWonder and buildingType ~= self.wonderName then
+        return true, "This wonder is for a different city."
     end
 
     local baseDistrictType = districtType
@@ -226,8 +231,7 @@ function CityProductionManager:IsBuildingBlocked(
     if replaceInfo ~= nil then
         baseDistrictType = replaceInfo.ReplacesDistrictType
     end
-    print(districtType, baseDistrictType)
-    local districtConfig = DistrictConfig[baseDistrictType]
+    local districtConfig = DistrictConfig[baseDistrictType] or {}
     local buildingConfigs = districtConfig["Buildings"] or {}
     local baseBuildingType = buildingType
     local info = GameInfo.Buildings[buildingType]
@@ -245,63 +249,68 @@ function CityProductionManager:IsBuildingBlocked(
         end
     end
 
-    print(buildingType, baseBuildingType)
     if TiersByBuildingType == nil then
         GetBuildingTierHierarchy()
     end
 
-    print(baseBuildingType)
-    local buildingConfig = buildingConfigs[baseBuildingType] or {}
-    if buildingConfig["Disabled"] then
-        local canProceed = false
-        if self.prereqBuildings[baseBuildingType] ~= nil then
-            canProceed = true
-            local tier = TiersByBuildingType[baseBuildingType]
-            if tier ~= nil then
-                local tierData = BuildingTypesByTier[baseDistrictType] or {}
-                tierData = tierData[tier] or {}
-                if #tierData > 0 then
-                    for i = 1, #tierData do
-                        local checkBuildingType = tierData[i]
-                        local checkConfig = buildingConfigs[checkBuildingType] or {}
-                        if (
-                            checkConfig["Disabled"] == nil or
-                            checkConfig["Disabled"] == false
-                        ) then
-                            canProceed = true
-                        end
+    local tier = TiersByBuildingType[baseBuildingType] or -1
+    local isRequiredForWonder = false
+    if self.prereqBuildings[baseBuildingType] ~= nil then
+        isRequiredForWonder = true
+        if tier ~= nil then
+            local tierData = BuildingTypesByTier[baseDistrictType] or {}
+            tierData = tierData[tier] or {}
+            if #tierData > 0 then
+                for i = 1, #tierData do
+                    local thisBuildingType = tierData[i]
+                    local thisConfig = buildingConfigs[thisBuildingType] or {}
+                    if thisConfig["Disabled"] ~= true then
+                        isRequiredForWonder = false
                     end
                 end
             end
         end
+    end
 
-        if not canProceed then
-            return true, "Always disabled."
+    if isRequiredForWonder then
+        return false, ""
+    end
+
+    local buildingConfig = buildingConfigs[baseBuildingType] or {}
+    local tierConfig = buildingConfigs[tier] or {}
+    local isDisabled = (
+        buildingConfig["Disabled"] or tierConfig["Disabled"] or false
+    )
+    local capitalOnly = (
+        buildingConfig["CapitalOnly"] or tierConfig["CapitalOnly"] or false
+    )
+    if capitalOnly == true then
+        local city = CityManager.GetCity(self.playerID, self.cityID)
+        if not city:IsCapital() then
+            isDisabled = true
         end
     end
 
-    if buildingConfig["Function"] ~= nil then
-        local argument = buildingConfig["Argument"]
-        return buildingConfig["Function"](self, argument)
+    if isDisabled then
+        return true, "Always disabled."
+    end
+
+    local runFunction = buildingConfig["Function"] or tierConfig["Function"]
+    local argument = buildingConfig["Argument"] or tierConfig["Argument"]
+    if runFunction ~= nil then
+        return runFunction(self, argument)
     end
 
     local currentEraIndex = Game.GetEras():GetCurrentEra()
-    local districtTierData = TiersByBuildingType[baseBuildingType] or {}
-    local tier = districtTierData[baseBuildingType]
-    local tierConfig = districtConfig["Tiers"] or {}
-    if tierConfig[tier] ~= nil then
-        local buildingTierConfig = tierConfig[tier]
-        if (
-            buildingTierConfig["Era"] ~= nil and
-            currentEraIndex < buildingTierConfig["Era"]
-        ) then
-            if self.prereqBuildings[baseBuildingType] == nil then
-                local eraInfo = GameInfo.Eras[districtConfig["Era"]]
-                local eraName = Locale.Lookup(eraInfo.Name)
-                return true, "Disabled until the " .. eraName .. "."
-            end
+    local quotaData = buildingConfig["Quota"] or tierConfig["Quota"] or {}
+    local quota = quotaData[currentEraIndex]
+    if quota ~= nil then
+        local currentCount = GetBuildingCount(self.playerID, buildingType)
+        if currentCount >= quota then
+            return true, "Quota for this era has already been met."
         end
     end
+
     return false, ""
 end
 
