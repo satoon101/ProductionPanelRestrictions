@@ -276,6 +276,9 @@ function RestrictForStableGovernor(obj, stableGovernorState)
 end
 
 function RestrictForTier2HolySite(obj, mountainState)
+    if obj.mountainCount == nil then
+        obj:GetMountainCount()
+    end
     local hasMountains = obj.mountainCount >= MIN_MOUNTAIN_COUNT_FOR_MONASTERY
     if hasMountains and not mountainState then
         return true, "Enough mountains to prioritize the Monastery."
