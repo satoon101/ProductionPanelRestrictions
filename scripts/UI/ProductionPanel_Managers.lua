@@ -151,7 +151,7 @@ function CityProductionManager:GetWonderPrereqInfo()
             if #info.PrereqBuildingCollection > 0 then
                 for i = 1, #info.PrereqBuildingCollection do
                     local newInfo = info.PrereqBuildingCollection[i]
-                    self.prereqBuildings[info.BuildingType] = true
+                    self.prereqBuildings[newInfo.BuildingType] = true
                     StorePrereqsForBuilding(newInfo)
                 end
             end
@@ -236,7 +236,7 @@ function CityProductionManager:IsBuildingBlocked(
     local baseBuildingType = buildingType
     local info = GameInfo.Buildings[buildingType]
     if #info.ReplacesCollection == 1 then
-        buildingType = #info.ReplacesCollection[1].ReplacesBuildingType
+        baseBuildingType = info.ReplacesCollection[1].ReplacesBuildingType
     elseif #info.ReplacesCollection > 1 then
         for i = 1, #info.ReplacesCollection do
             local row = info.ReplacesCollection[i]
@@ -264,13 +264,19 @@ function CityProductionManager:IsBuildingBlocked(
                 for i = 1, #tierData do
                     local thisBuildingType = tierData[i]
                     local thisConfig = buildingConfigs[thisBuildingType] or {}
-                    if thisConfig["Disabled"] ~= true then
+                    if (
+                        thisConfig["Disabled"] ~= true and
+                        self.prereqBuildings[thisBuildingType] ~= nil
+                    ) then
                         isRequiredForWonder = false
                     end
                 end
             end
         end
     end
+
+    -- TODO: disable building if not required for wonder,
+    --      but another building of the same district/tier is.
 
     if isRequiredForWonder then
         return false, ""
