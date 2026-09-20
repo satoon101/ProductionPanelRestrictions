@@ -34,6 +34,7 @@ function CityProductionManager:new(playerID, cityID)
         wonderEstablished = false,
         prereqDistrict = nil,
         prereqBuildings = {},
+        prereqBuildingsByTier = {},
         districtPurposes = {},
     }
 
@@ -145,13 +146,24 @@ function CityProductionManager:GetWonderPrereqInfo()
         self.prereqDistrict = districtInfo.DistrictType
     end
 
+    if TiersByBuildingType == nil then
+        GetBuildingTierHierarchy()
+    end
+
     self.prereqBuildings = {}
+    self.prereqBuildingsByTier = {}
     if self.prereqDistrict ~= nil then
         local function StorePrereqsForBuilding(info)
             if #info.PrereqBuildingCollection > 0 then
                 for i = 1, #info.PrereqBuildingCollection do
                     local newInfo = info.PrereqBuildingCollection[i]
-                    self.prereqBuildings[newInfo.BuildingType] = true
+                    local building = newInfo.BuildingType
+                    local buildingTier = TiersByBuildingType[building]
+                    if self.prereqBuildingsByTier[buildingTier] == nil then
+                        self.prereqBuildingsByTier[buildingTier] = {}
+                    end
+                    self.prereqBuildings[building] = true
+                    self.prereqBuildingsByTier[buildingTier][building] = true
                     StorePrereqsForBuilding(newInfo)
                 end
             end
@@ -249,10 +261,6 @@ function CityProductionManager:IsBuildingBlocked(
         end
     end
 
-    if TiersByBuildingType == nil then
-        GetBuildingTierHierarchy()
-    end
-
     local tier = TiersByBuildingType[baseBuildingType] or -1
     local isRequiredForWonder = false
     if self.prereqBuildings[baseBuildingType] ~= nil then
@@ -275,8 +283,14 @@ function CityProductionManager:IsBuildingBlocked(
         end
     end
 
-    -- TODO: disable building if not required for wonder,
-    --      but another building of the same district/tier is.
+    if baseDistrictType == self.prereqDistrict then
+        if (
+            self.prereqBuildingsByTier[tier] ~= nil and
+            self.prereqBuildingsByTier[tier][baseBuildingType] == nil
+        ) then
+            return true, "Only prerequisite building(s) for district/tier allowed for city wonder."
+        end
+    end
 
     if isRequiredForWonder then
         return false, ""
