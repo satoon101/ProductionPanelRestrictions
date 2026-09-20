@@ -217,6 +217,9 @@ DistrictConfig = {
             },
 
             -- Tier 1
+            BUILDING_BARRACKS = {
+                Disabled = true,
+            },
             BUILDING_JNR_TARGET_RANGE = {
                 Disabled = true,
             },
