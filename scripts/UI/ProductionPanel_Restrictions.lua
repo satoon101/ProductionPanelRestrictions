@@ -5,6 +5,8 @@
 
 print("=== Production Panel Restrictions (UI) Loading ===")
 
+ExposedMembers.ProductionPanel = ExposedMembers.ProductionPanel or {}
+
 include("ProductionPanel")
 include("ProductionPanel_Managers")
 
@@ -98,5 +100,23 @@ function GetData()
     end
     return data
 end
+
+-------------------------------------------------------------------------------
+-- Exposed functions for other mods to be able to use.
+-------------------------------------------------------------------------------
+function IsDistrictBlocked(playerID, cityID, districtType)
+    local obj = CityProductionManager:new(playerID, cityID)
+    return obj:IsDistrictBlocked(districtType)
+end
+
+function IsBuildingBlocked(
+    playerID, cityID, districtType, buildingType, isWonder
+)
+    local obj = CityProductionManager:new(playerID, cityID)
+    return obj:IsDistrictBlocked(districtType, buildingType, isWonder)
+end
+
+ExposedMembers.ProductionPanel.IsDistrictBlocked = IsDistrictBlocked
+ExposedMembers.ProductionPanel.IsBuildingBlocked = IsBuildingBlocked
 
 print("=== Production Panel Restrictions (UI) Loaded ===")

@@ -14,7 +14,7 @@
         <ReplaceUIScript id="CustomProductionPanel">
             <Properties>
                 <LuaContext>ProductionPanel</LuaContext>
-                <LuaReplace>scripts/UI/ProductionPanel_UI.lua</LuaReplace>
+                <LuaReplace>scripts/UI/ProductionPanel_Restrictions.lua</LuaReplace>
             </Properties>
         </ReplaceUIScript>
 
@@ -32,7 +32,7 @@
         <File>scripts/UI/ProductionPanel_Constants.lua</File>
         <File>scripts/UI/ProductionPanel_Helpers.lua</File>
         <File>scripts/UI/ProductionPanel_Managers.lua</File>
-        <File>scripts/UI/ProductionPanel_UI.lua</File>
+        <File>scripts/UI/ProductionPanel_Restrictions.lua</File>
     </Files>
 
 </Mod>
