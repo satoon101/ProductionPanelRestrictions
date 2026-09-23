@@ -102,6 +102,9 @@ DistrictConfig = {
             },
 
             -- Tier 1
+            BUILDING_WALLS = {
+                Era = CLASSICAL_ERA_INDEX,
+            },
             BUILDING_MONUMENT = {
                 CapitalOnly = true,
             },
