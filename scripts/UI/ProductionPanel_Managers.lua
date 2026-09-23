@@ -261,6 +261,10 @@ function CityProductionManager:IsBuildingBlocked(
         end
     end
 
+    if TiersByBuildingType == nil then
+        GetBuildingTierHierarchy()
+    end
+
     local tier = TiersByBuildingType[baseBuildingType] or -1
     local isRequiredForWonder = false
     if self.prereqBuildings[baseBuildingType] ~= nil then
